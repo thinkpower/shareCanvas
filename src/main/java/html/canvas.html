@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>画板实验</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!--        <script type="text/javascript"
+            src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+          </script>-->
+        <style type="text/css">
+        </style>
+    </head>
+    <body >
+        <canvas id="myCanvas" ></canvas>
+         
+        <div>
+            <button onclick="clean();">清 空</button>
+            <button onclick="save();">生成图片</button>
+        </div>
+
+        <img id='img' alt='请涂鸦……'/>
+        
+        <textarea id="log" cols="30" rows="5"></textarea>
+        <textarea id="responseText" style="width:500px;height:300px;display:none"></textarea>
+        <script type="text/javascript">
+        
+        
+        
+        var socket;
+        if (!window.WebSocket) {
+          window.WebSocket = window.MozWebSocket;
+        }
+        if (window.WebSocket) {
+          socket = new WebSocket("ws://canvas.nat123.net/websocket");
+          socket.onmessage = function(event) {
+            var ta = document.getElementById('responseText');
+            ta.value = ta.value + '\n' + event.data;
+            drawRemote(event.data);
+          };
+          socket.onopen = function(event) {
+            var ta = document.getElementById('responseText');
+            ta.value = "Web Socket opened!";
+          };
+          socket.onclose = function(event) {
+            var ta = document.getElementById('responseText');
+            ta.value = ta.value + "Web Socket closed"; 
+          };
+        } else {
+          alert("Your browser does not support Web Socket.");
+        }
+
+		
+        
+        function send(message) {
+        	  if (!window.WebSocket) { return; }
+        	  if (socket.readyState == WebSocket.OPEN) {
+        	    socket.send(message);
+        	  } else {
+        	    alert("The socket is not open.");
+        	  }
+        	}
+
+        
+        
+            var canvas,board,img;
+            canvas = document.getElementById('myCanvas');
+            img= document.getElementById('img');
+            
+            canvas.height = 300;
+            canvas.width = 300;
+
+            board = canvas.getContext('2d');
+            
+            var mousePress = false;
+            var last = null;
+            
+            function beginDraw(){
+                mousePress = true;
+            }
+            
+            function drawing(event){
+                event.preventDefault();
+                if(!mousePress)return;
+                var xy = pos(event);
+                if(last!=null){
+                    board.beginPath();
+                    board.moveTo(last.x,last.y);
+                    board.lineTo(xy.x,xy.y);
+                    board.stroke();
+                    send(last.x+"_"+last.y+"_"+xy.x+"_"+xy.y);
+                }
+                last = xy;
+                
+            }
+            
+            function drawRemote(msg){
+            	var arr = msg.split('_');
+            	console.log(msg);
+            	var start_x = parseInt(arr[0]);
+            	var start_y = parseInt(arr[1]);
+            	
+            	var end_x = parseInt(arr[2]);
+            	var end_y = parseInt(arr[3]);
+            	
+            	 board.beginPath();
+                 board.moveTo(start_x,start_y);
+                 board.lineTo(end_x,end_y);
+                 board.stroke();
+
+            }
+            
+            function endDraw(event){
+                 mousePress = false;
+                 event.preventDefault();
+                 last = null;
+            }
+            
+            function pos(event){
+                var x,y;
+                if(isTouch(event)){
+                    x = event.touches[0].pageX;
+                    y = event.touches[0].pageY;
+                }else{
+                    x = event.offsetX+event.target.offsetLeft;
+                    y = event.offsetY+event.target.offsetTop;
+                }
+//               log('x='+x+' y='+y);
+                return {x:x,y:y};
+            }
+            
+            function log(msg){
+                var log = document.getElementById('log');
+                var val = log.value;
+                log.value = msg+'\n'+val;                
+            }
+            
+            function isTouch(event){
+                var type = event.type;
+                if(type.indexOf('touch')>=0){
+                    return true;
+                }else{
+                    return false;
+                }
+            }
+            
+            function save(){
+                //base64
+                var dataUrl = canvas.toDataURL();
+//                dataUrl = dataUrl.replace("image/png", "image/octet-stream");
+                img.src = dataUrl;
+            }
+            
+            
+            function clean(){
+                board.clearRect(0,0,canvas.width,canvas.height);
+
+            }
+             
+            board.lineWidth = 1;
+            board.strokeStyle="#0000ff";
+            
+            
+            canvas.onmousedown = beginDraw;
+            canvas.onmousemove = drawing;
+            canvas.onmouseup = endDraw;
+            canvas.addEventListener('touchstart',beginDraw,false);
+            canvas.addEventListener('touchmove',drawing,false);
+            canvas.addEventListener('touchend',endDraw,false);
+        </script>
+
+        
+        
+
+\[
+\lim_{x \to 0} 
+\]
+
+    </body>
+</html>
+
